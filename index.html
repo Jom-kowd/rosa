@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0" />
   <title>A Note For Rosalyn</title>
-
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='25' fill='%230d1124'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' font-family='Georgia, serif' font-size='60' font-style='italic' fill='%23f4b8c8'>R</text></svg>">
   <!-- Google Fonts: Cormorant Garamond, Plus Jakarta Sans, JetBrains Mono -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -243,7 +243,9 @@
 
   <div class="ambient-bg" id="ambientBg"></div>
   <canvas id="particleCanvas" class="fixed inset-0 pointer-events-none z-0"></canvas>
-  <audio id="customAudioFile" loop preload="auto" src=""></audio>
+  
+  <!-- DITO NAKALAGAY ANG MP3 FILE MO -->
+  <audio id="customAudioFile" loop preload="auto" src="pinipili.mp3"></audio>
 
   <header id="topHeader" class="fixed top-0 left-0 right-0 z-40 opacity-0 pointer-events-none transition-opacity duration-700">
     <div class="w-full h-[2px] bg-white/5 overflow-hidden">
@@ -1178,97 +1180,30 @@
     const closeLetterOverlay = document.getElementById('closeLetterOverlay');
     const reopenLetterBtn = document.getElementById('reopenLetterBtn');
 
-    let audioCtx = null;
-    let isAudioPlaying = false;
-    let ambientInterval = null;
     const customAudioEl = document.getElementById('customAudioFile');
     const audioToggleBtn = document.getElementById('audioToggleBtn');
     const audioStatusText = document.getElementById('audioStatusText');
     const audioWaveIcon = document.getElementById('audioWaveIcon');
+    let isAudioPlaying = false;
 
-    const warmChords = [
-      [174.61, 220.00, 261.63, 329.63],
-      [130.81, 196.00, 246.94, 329.63],
-      [220.00, 261.63, 329.63, 392.00],
-      [196.00, 246.94, 293.66, 329.63]
-    ];
-    let currentChordIndex = 0;
-
-    function playWarmChord(frequencies, duration = 5.5) {
-      if (!audioCtx || !isAudioPlaying) return;
-      const now = audioCtx.currentTime;
-
-      frequencies.forEach((freq, idx) => {
-        const osc = audioCtx.createOscillator();
-        const gain = audioCtx.createGain();
-        const filter = audioCtx.createBiquadFilter();
-
-        osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
-        osc.frequency.setValueAtTime(freq, now);
-
-        filter.type = 'lowpass';
-        filter.frequency.setValueAtTime(850, now);
-
-        gain.gain.setValueAtTime(0.0001, now);
-        gain.gain.linearRampToValueAtTime(0.018, now + 1.8);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
-
-        osc.connect(filter);
-        filter.connect(gain);
-        gain.connect(audioCtx.destination);
-
-        osc.start(now);
-        osc.stop(now + duration + 0.1);
+    // AUDIO CONTROLS
+    function playCustomAudio() {
+      if (!customAudioEl) return;
+      customAudioEl.volume = 0.6;
+      customAudioEl.play().then(() => {
+        isAudioPlaying = true;
+        updateAudioUI();
+      }).catch((err) => {
+        console.log("Audio autoplay prevented or file missing:", err);
+        isAudioPlaying = false;
+        updateAudioUI();
       });
     }
 
-    function startAmbientMusic() {
-      const customSrc = customAudioEl.getAttribute('src');
-      if (customSrc && customSrc.trim() !== '') {
-        customAudioEl.volume = 0.45;
-        customAudioEl.play().then(() => {
-          isAudioPlaying = true;
-          updateAudioUI();
-        }).catch(() => {
-          isAudioPlaying = false;
-          updateAudioUI();
-        });
-        return;
-      }
-
-      try {
-        if (!audioCtx) {
-          const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-          audioCtx = new AudioContextClass();
-        }
-        if (audioCtx.state === 'suspended') {
-          audioCtx.resume();
-        }
-        isAudioPlaying = true;
-        updateAudioUI();
-
-        playWarmChord(warmChords[currentChordIndex]);
-        if (ambientInterval) clearInterval(ambientInterval);
-        ambientInterval = setInterval(() => {
-          if (!isAudioPlaying) return;
-          currentChordIndex = (currentChordIndex + 1) % warmChords.length;
-          playWarmChord(warmChords[currentChordIndex]);
-        }, 4800);
-      } catch (e) {
-        isAudioPlaying = false;
-        updateAudioUI();
-      }
-    }
-
-    function stopAmbientMusic() {
+    function stopCustomAudio() {
+      if (!customAudioEl) return;
+      customAudioEl.pause();
       isAudioPlaying = false;
-      if (customAudioEl && !customAudioEl.paused) {
-        customAudioEl.pause();
-      }
-      if (ambientInterval) {
-        clearInterval(ambientInterval);
-        ambientInterval = null;
-      }
       updateAudioUI();
     }
 
@@ -1284,14 +1219,13 @@
 
     audioToggleBtn.addEventListener('click', () => {
       if (isAudioPlaying) {
-        stopAmbientMusic();
+        stopCustomAudio();
       } else {
-        startAmbientMusic();
+        playCustomAudio();
       }
     });
 
     openLetterBtn.addEventListener('click', () => {
-      startAmbientMusic();
       envelopeContainer.classList.add('envelope-open');
       openLetterBtn.style.pointerEvents = 'none';
 
@@ -1418,7 +1352,10 @@
       gentleConfirmBox.scrollIntoView({ behavior: 'smooth', block: 'center' });
     });
 
+    // DITO TUMUTUGTOG ANG pinipili.mp3 PAGKA-CLICK NG "I promise, show me"
     revealConfessionBtn.addEventListener('click', () => {
+      playCustomAudio(); // Tumatugtog na ang pinipili.mp3 dito!
+
       climaxContainer.classList.remove('hidden');
       requestAnimationFrame(() => {
         climaxContainer.classList.remove('opacity-0');
